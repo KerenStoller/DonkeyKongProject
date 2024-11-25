@@ -1,6 +1,8 @@
 #include <iostream>
+#include "GameObj.h"
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    GameObj game;
+    game.start();
 }
