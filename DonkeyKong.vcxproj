@@ -182,13 +182,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GameObj.cpp" />
+    <ClCompile Include="Board.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mario.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameObj.h" />
+    <ClInclude Include="Board.h" />
     <ClInclude Include="Mario.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

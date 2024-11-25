@@ -1,8 +1,10 @@
 #include <iostream>
-#include "GameObj.h"
+/* this is like Game.cpp
+*/
+#include "Board.h"
 
 int main()
 {
-    GameObj game;
-    game.start();
+    Board board;
+    board.start();
 }
