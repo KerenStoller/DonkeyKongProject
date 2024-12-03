@@ -182,14 +182,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Board.cpp" />
+    <ClCompile Include="Barrel.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Direction.h" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mario.cpp" />
+    <ClCompile Include="MovingObj.cpp" />
+    <ClCompile Include="StaticBoard.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Board.h" />
+    <ClInclude Include="Barrel.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="Mario.h" />
+    <ClInclude Include="MovingObj.h" />
+    <ClInclude Include="Position.h" />
+    <ClInclude Include="StaticBoard.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

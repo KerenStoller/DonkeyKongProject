@@ -1,10 +1,11 @@
 #include <iostream>
 /* this is like Game.cpp
 */
-#include "Board.h"
+#include "Game.h"
 
 int main()
 {
-    Board board;
-    board.start();
+    Game game;
+    game.start();
+    return 0;
 }
