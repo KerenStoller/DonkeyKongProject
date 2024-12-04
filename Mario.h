@@ -2,40 +2,21 @@
 #include <iostream>
 #include "utils.h"
 #include "Position.h"
-#include "Direction.h"
-#include "StaticBoard.h"
 #include "MovingObj.h"
+
 
 #define INITIALPOS = {1,23}
 
-
 class Mario : public MovingObj{
 
-	int lives = 3; // change to magic number!!
-	bool won = false;
-	Position lastDir = directions.STAY;
+	int jumpCounter = 0;
 
-	int movingJumpCount = 0;
-
-	bool hasWonOrLost();
-	bool hasWon(char chToCheck);
-	bool isAlive(char chToCheck);
-
-	bool isMarioOutOfBorder();
-
-	bool isOnLadder(bool up);
-	bool wasOnLadder();
-	bool isAboveLadder();
-
-	bool isMarioAboveFloor();
-	bool isUnderFloor();
-
-	void handleUpMovement();
-	void undoMove();
+	void moveUp(Position& newPos);
+	void moveDown(Position& newPos);
 
 public:
 	// MAGIC NUMBERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	Mario(StaticBoard& b) : MovingObj(b, '@', Position{1,23}, Position (directions.STAY)) {};
-	int changeDir(char key);
-	int move();
+	Mario(StaticBoard& b) : MovingObj(b, '@', Position{1,23},  directions.STAY, directions.STAY) {};
+	void changeDir(char key);
+	void move();
 };

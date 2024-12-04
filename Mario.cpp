@@ -1,357 +1,140 @@
 #include "Mario.h"
 
-// function checks if mario won or lost
-bool Mario::hasWonOrLost()
+/*
+function assigns pressed key to new direction
+*/
+void Mario::changeDir(char keyPressed)
 {
-	char chToCheck = board.getChar(location);
-	if (!isAlive(chToCheck) && hasWon(chToCheck))
+	switch (std::tolower(keyPressed))
 	{
-		return true;
+	case(LEFT):
+		xAxisDir = directions.LEFT;
+		break;
+	case(RIGHT):
+		xAxisDir = directions.RIGHT;
+		break;
+	case(UP):
+		yAxisDir = directions.UP;
+		break;
+	case(DOWN):
+		yAxisDir = directions.DOWN;
+		break;
+	case(STAY):
+		yAxisDir = directions.STAY;
+		xAxisDir = directions.STAY;
+		break;
+	default: //ignore
+		break;
 	}
-	return false;
-}
 
-// function returns true if mario didn't touch barrel or kong
-bool Mario::isAlive(char chToCheck)
-{
-	if (chToCheck == 'B' or chToCheck == 'K')	// barrel or kong
-	{
-		this->lives--;
-		return false;
-	}
-
-	return true;
-}
-
-// function returns true if mario touched Pauline
-bool Mario::hasWon(char chToCheck)
-{
-	if (chToCheck == 'P')	// Pauline
-	{
-		this->won = true;
-		return true;
-	}
-	return false;
+	move();
 }
 
 
 /*
-function gets a bool indicating if mario is going up or down the latte
-function takes care of 3 cases:
-	1) mario's on ladder and wants to go up
-	2) mario's on ladder and wants to go down
-	3) mario's movement is up and he reached above the last level of the ladder (he's in between levels)
+function takes care of up movement: 
+	1) ladder
+	2) jumping
 */
-bool Mario::isOnLadder(bool up)
+void Mario::moveUp(Position& newPos)
 {
-	char chToCheck = board.getChar(location);
-	if (isLadder(chToCheck))
-	{
-		if (up)
-		{
-			return true;
+	// start of ladder
+	if (isLadder(board.getChar(newPos)) and isOnFloor(location)) {
+		gravityState = ON_LADDER;
+	}
+	// end of ladder (when reaching floor)
+	else if (gravityState == ON_LADDER and isFloor(board.getChar(newPos))) {
+		newPos.setY(newPos.getY() - 1);	// skip floor
+		gravityState = ON_GROUND;
+		yAxisDir = directions.STAY;
+	}
+	// jump
+	else if(gravityState != ON_LADDER) {
+		// if mario touches floor
+		if (isFloor(board.getChar(newPos))) {
+			gravityState = FALLING;
+			newPos.setY(newPos.getY() + 1);	//undo jump
+			yAxisDir = directions.DOWN;
+			return;
 		}
-		else // he can only climb down if he isn't on floor
-		{
-			return (!isOnFloor(location));
+
+		// start of jump
+		if (gravityState == ON_GROUND) {
+			gravityState = JUMPING;
+			jumpCounter = 0;
 		}
+		jumpCounter++;
+		if (jumpCounter == JUMP_HEIGHT)	// end of jump
+		{
+			gravityState = FALLING;
+		}
+	}
+}
+
+/*
+function takes care of moving down:
+	1) falling
+	2) climbing down the ladder
+*/
+void Mario::moveDown(Position& newPos)
+{	
+	if (gravityState == FREE_FALLING or gravityState == FALLING) { return; }
+
+	// start of ladder
+	if (gravityState != ON_LADDER) {	
+		newPos.setY(newPos.getY() + 1); //check under floor
+		if (isPosOutOfBorder(newPos) or !isLadder(board.getChar(newPos))) {
+			newPos.setY(newPos.getY() - 2);	// correct position if out of bounds
+			yAxisDir = directions.STAY;
+		} 
+		else {
+			gravityState = ON_LADDER;
+		}
+	}
+	// end of ladder (mario reaches the floor)
+	else if (gravityState == ON_LADDER and isOnFloor(location)) {
+		gravityState = ON_GROUND;
+		newPos.setY(newPos.getY() - 1);	// change newPos back to floor
+		yAxisDir = directions.STAY;
+	}
+}
+
+
+/*
+function moves mario to new location only if location is valid
+*/
+void Mario::move()
+{
+	manageGravity();
+
+	if (yAxisDir == directions.STAY and xAxisDir == directions.STAY) { return; } // nothing to do
+
+	Position newPos = location + xAxisDir + yAxisDir;
+
+	if (isPosOutOfBorder(newPos)) {
+		//prevent further movement
+		if (gravityState == ON_GROUND)
+		{
+			xAxisDir = directions.STAY;
+		}
+		yAxisDir = directions.STAY;
+		gravityState = FALLING;
 	}
 	else
 	{
-		if (up and movingJumpCount == 0)	// regular up
-		{
-			if (wasOnLadder() and isFloor(chToCheck))	// at the end of ladder inside the floor
-			{
-				// stop climbing ladder and get to second floor or stay at top of ladder
-				lastDir = currentDir;
-				currentDir = directions.STAY;
-
-				// move to second floor
-				erase();
-				drawOldLoc();
-				location.setXY(location.getX(), location.getY() - 1);	// second floor
-
-				if (isMarioOutOfBorder())
-				{
-					undoMove();
-					location.setXY(location.getX(), location.getY() + 1);	// top of ladder
-				}
-
-				draw();
-				return true;
-			}
+		if (yAxisDir == directions.UP) {
+			moveUp(newPos);
 		}
-	}
-	return false;
-}
-
-/*
-function checks if mario's location is out of bounds:
-	1) location is out of our board's bounds.
-	2) mario is touching the bottom part of board (abyss)
-*/
-bool Mario::isMarioOutOfBorder()
-{
-	if (isPosOutOfBorder(location))
-	{
-		return true;
-	}
-	else if (location.getY() == board.MAX_Y -1)	// mario got to bottom of floor
-	{
-		currentDir = directions.STAY;
-		return true;
-	}
-	return false;
-}
-
-/*
-function takes care of moving-up movement: 
-	1) uses var rightOrLeft to indicate if jump is to the right or to the left
-*/
-void Mario::handleUpMovement()
-{
-	// mario is mid jump since Move function moved one pixel up
-
-	int rightOrLeft = -1;
-	if (lastDir == directions.RIGHT)
-	{
-		rightOrLeft = 1;
-	}
-
-	if (movingJumpCount == 3)	 // end of moving jump
-	{
-		location.setXY(location.getX() + rightOrLeft, location.getY() + 3);
-	}
-	else
-	{
-		location.setX(location.getX() + rightOrLeft);
-	}
-
-	if (isMarioOutOfBorder() or isFloor(board.getChar(location)))		// undo and start falling
-	{
-		location.setX(location.getX() - rightOrLeft);
-		if (movingJumpCount == 3)
-		{
-			location.setY(location.getY() - 3);
+		else if (yAxisDir == directions.DOWN) {
+			moveDown(newPos);
 		}
-		currentDir = directions.DOWN;
-		lastDir = directions.UP;
-	}
-	else if (isOnFloor(location))  // go back to old direction
-	{
-		currentDir = lastDir;
-		lastDir = directions.UP;
-	}
-	else if(location.getY() == board.TOP_OF_BOARD or isUnderFloor() or movingJumpCount == 3) // jumping in small spaces or at end of fall
-	{
-		currentDir = directions.DOWN;
-		lastDir = directions.UP;
+
+		// Erase old location and move to new position
+		erase();
+		drawOldLoc();
+		location = newPos;
+		draw();
 	}
 
-	movingJumpCount++;
-}
-
-/*
-function undos lsat move accordint to currentDir
-*/
-void Mario::undoMove()
-{
-	location.setX(location.getX() - currentDir.getX());
-	location.setY(location.getY() - currentDir.getY());
-
-	lastDir = currentDir;
-	if (isMarioAboveFloor())
-	{
-		currentDir = directions.DOWN;
-	}
-	else
-	{
-		currentDir = directions.STAY;
-	}
-	draw();
-}
-
-bool Mario::isMarioAboveFloor()
-{
-	Position pos = location;
-	pos.setXY(pos.getX(), pos.getY() + 1);
-	if (isPosOutOfBorder(pos))
-	{
-		return false;
-	}
-	return isOnFloor(pos);
-}
-
-bool Mario::wasOnLadder()
-{
-	Position before(location.getX(), location.getY() + 1);
-	if (!isPosOutOfBorder(before))
-	{
-		return (isLadder(board.getChar(before)));
-	}
-	return false;
-}
-
-bool Mario::isAboveLadder()
-{
-	if (isOnFloor(location))
-	{
-		Position pos = location;
-		pos.setY(location.getY() + 2);
-		if (isPosOutOfBorder(pos))
-		{
-			return false;
-		}
-		if (isLadder(board.getChar(pos)))
-		{
-			erase();
-			drawOldLoc();
-			location = pos;
-			draw();
-			return true;
-		}
-	}
-	return false;
-}
-
-bool Mario::isUnderFloor()
-{
-	Position pos = location;
-	pos.setY(pos.getY() - 1);
-	return (isFloor(board.getChar(pos)));
-}
-
-/*
-function:
-	1) gets key that indicates move.
-	2) takes care of keys related to mario only
-	3) checks if key was a valid move if so it changes mario's direction.
-	*) in case of new up direction function initializes movingJumpCount according to last movement
-*/
-int Mario::changeDir(char key)
-{
-	lastDir = currentDir;
-
-	switch (std::tolower(key))
-	{
-		case('a'):	//left
-			if (isOnFloor(location) or isOnLadder(true))
-			{
-				currentDir = directions.LEFT;
-			}
-			break;
-		case('d'):	// right
-			if (isOnFloor(location) or isOnLadder(true))
-			{
-				currentDir = directions.RIGHT;
-			}
-			break;
-		case('w'):	//up
-			if ((isOnFloor(location) and !isUnderFloor()) or isOnLadder(true))
-			{
-				movingJumpCount = 0;
-				if (lastDir == directions.RIGHT or lastDir == directions.LEFT)
-				{
-					movingJumpCount = 1;
-				}
-				currentDir = directions.UP;
-			}
-			break;
-		case('x'):	// down
-			if (isOnLadder(false) or isAboveLadder())
-			{
-				currentDir = directions.DOWN;
-			}
-			break;
-		case('s'):	// stay
-			if (isOnFloor(location) or isOnLadder(true))
-			{
-				currentDir = directions.STAY;
-			}
-			break;
-		default: //ignore
-			break;
-	}
-
-	return move();
-}
-
-
-/*
-* function:
-	1) moves mario according to currentDir
-	2) checks if new location is valid
-		*) if move wasn't valid it undos it and sets currentDir accordingly.
-	3) prepares new currentDir if needed
-	4) function returns 1 if Mario lost, 0 else
-	
-	- function uses handleUpMovement: function that takes care of jumping
-	(ie: handles special edge cases for moving jump)
-*/
-int Mario::move()
-{
-	if (currentDir == directions.STAY) { return 0; } // nothing to do
-
-	// erase old location, return what was there
-	erase();
-	drawOldLoc();
-
-	//move to next position
-	location.setX(location.getX() + currentDir.getX());
-	location.setY(location.getY() + currentDir.getY());
-
-	if (currentDir == directions.UP and movingJumpCount != 0)			//moving jump
-	{
-		handleUpMovement();
-	}
-	else if (isMarioOutOfBorder())				//movements diff than moving up are easy to undo
-	{
-		undoMove();
-	}
-	else
-	{
-		if (currentDir == directions.UP)
-		{
-			if (!isOnLadder(true))
-			{
-				if (isMarioAboveFloor() and (location.getY() == board.TOP_OF_BOARD or isUnderFloor()))	// at the top of screen or jumping in small spaces
-				{
-					lastDir = directions.UP;
-					currentDir = directions.DOWN;
-				}
-				else if (!isMarioAboveFloor() and !isOnFloor(location))	// at the end of reg jump
-				{
-					lastDir = directions.UP;
-					currentDir = directions.DOWN;
-				}
-			}
-		}
-		else if (currentDir == directions.DOWN)
-		{
-			if (isOnFloor(location))	// just finished with ladder / falling / ending jump
-			{
-				lastDir = currentDir;
-				currentDir = directions.STAY;
-			}
-			else if (location.getY() == board.MAX_Y - 1)	// fell through hole to bottom of screen -> lost
-			{
-				currentDir = directions.STAY;
-				lives--;
-				return 1;
-			}
-		}
-		else if (currentDir == directions.RIGHT or currentDir == directions.LEFT)
-		{
-			if (!isOnFloor(location))	// starts falling
-			{
-				lastDir = currentDir;
-				currentDir = directions.DOWN;
-			}
-		}
-	}
-
-	if (hasWonOrLost()) { return 1; }
-
-	draw();
-	return 0;
+	return;
 }

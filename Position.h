@@ -19,4 +19,7 @@ public:
 	bool operator!=(Position pos2) {
 		return (x != pos2.x or y != pos2.y);
 	}
+	Position operator+(Position pos2) {
+		return (Position(x + pos2.getX(), y + pos2.getY()));
+	}
 };

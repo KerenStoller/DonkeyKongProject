@@ -13,9 +13,16 @@ as soon as Mario touches a barrel -> class will ??
 
 class Game {
 
+	int lives = 3; // change to magic number!!
+	bool won = false;
+
+	Position DonkeyKongLoc = Position{ 70,1 };
+	Position PaulineLoc = Position{ 65,1 };
 	Mario mario;
 	StaticBoard board;
 	Barrel* barrels[5];
+
+	bool hasWonOrLost();
 
 public:
 	Game() : mario(board) {

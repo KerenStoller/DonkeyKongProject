@@ -4,7 +4,8 @@
 
 class Barrel : public MovingObj
 {
-	void Start();
 public:
-	Barrel(StaticBoard& b) : MovingObj(b, 'B', { 0,0 }, { 0,1 }) {};
+	Barrel(StaticBoard& b) : MovingObj(b, 'O', { 2,0 }, { 0,0 }, {0,0}) {};
+	void move();
+	void changeDir();
 };

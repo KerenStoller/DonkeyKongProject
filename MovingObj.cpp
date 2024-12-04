@@ -22,15 +22,13 @@ bool MovingObj::isLadder(char ch)
 	return (ch == 'H');
 }
 
-bool MovingObj::isBarrel(char ch)
-{
-	return (ch == 'O');
-}
+MovingObj::MovingObj(StaticBoard& _b, char _i, Position _loc, Position _xDir, Position _yDir) :
+	board(_b), icon(_i), location(_loc), xAxisDir(_xDir), yAxisDir(_yDir)
+{}
 
-MovingObj::MovingObj(StaticBoard& b, char i, Position loc, Position curr) :
-	board(b), icon(i), location(loc), currentDir(curr)
+Position MovingObj::getLocation()
 {
-
+	return Position(location.getX(), location.getY());
 }
 
 bool MovingObj::isPosOutOfBorder(Position pos)
@@ -46,4 +44,31 @@ bool MovingObj::isOnFloor(Position pos)
 		return false;
 	}
 	return(isFloor(board.getChar(pos)));
+}
+
+/*
+function makes sure gravityState is up to date with yAxisDir
+	plus, function disables horizantal movements in ON_LADDER and FREE_FALLING states
+*/
+void MovingObj::manageGravity()
+{
+	// falling after jump
+	if (!isOnFloor(location) and gravityState == FALLING) {
+		yAxisDir = directions.DOWN;
+	}
+	// dont allow lateral movement if mario is on ladder
+	else if (!isOnFloor(location) and gravityState == ON_LADDER) {
+		xAxisDir = directions.STAY;
+	}
+	// free falling 
+	else if (!isOnFloor(location) and gravityState != JUMPING and gravityState != FALLING) {
+		gravityState = FREE_FALLING;
+		yAxisDir = directions.DOWN;
+		xAxisDir = directions.STAY;			// no lateral movement
+	}
+	// stop falling once touching ground
+	else if (isOnFloor(location) and gravityState != ON_GROUND and gravityState != ON_LADDER) {
+		yAxisDir = directions.STAY;
+		gravityState = ON_GROUND;
+	}
 }

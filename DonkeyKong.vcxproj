@@ -184,7 +184,7 @@
   <ItemGroup>
     <ClCompile Include="Barrel.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Direction.h" />
+    <ClCompile Include="Directions.h" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mario.cpp" />
     <ClCompile Include="MovingObj.cpp" />

@@ -27,7 +27,7 @@
     <ClCompile Include="Mario.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Direction.h">
+    <ClCompile Include="Directions.h">
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="StaticBoard.cpp">
